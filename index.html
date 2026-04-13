@@ -168,79 +168,112 @@ function getChapter(){
 function getHistory(){try{return JSON.parse(lsGet('history')||'[]')}catch{return[]}}
 
 function generateMeditation(ch, text) {
-  // Parse verses
   const lines = text.split('\n').filter(l => l.trim());
   const totalVerses = lines.length;
-  const firstVerse = lines[0] || '';
-  const midVerse = lines[Math.floor(lines.length/2)] || '';
-  const lastVerse = lines[lines.length-1] || '';
+  const clean = (v) => v.replace(/^\d+\.\s*/, '').trim();
+  const first = clean(lines[0]||'');
+  const mid = clean(lines[Math.floor(lines.length/2)]||'');
+  const last = clean(lines[lines.length-1]||'');
 
-  // Extract key themes based on keywords
-  const themes = [];
-  if (text.match(/사랑|긍휼|은혜|자비/)) themes.push('하나님의 사랑과 은혜');
-  if (text.match(/믿음|신뢰|의지/)) themes.push('믿음과 신뢰');
-  if (text.match(/기도|간구|부르짖/)) themes.push('기도의 능력');
-  if (text.match(/순종|명령|계명|율법/)) themes.push('순종과 말씀');
-  if (text.match(/구원|구하|건지|살리/)) themes.push('구원의 약속');
-  if (text.match(/두려|무서|걱정|염려/)) themes.push('두려움을 이기는 믿음');
-  if (text.match(/감사|찬양|영광|높이/)) themes.push('감사와 찬양');
-  if (text.match(/죄|악|회개|용서/)) themes.push('회개와 용서');
-  if (text.match(/소망|희망|기다|인내/)) themes.push('소망과 인내');
-  if (text.match(/평안|평화|쉼|안식/)) themes.push('하나님의 평안');
-  if (text.match(/능력|권능|힘|강하/)) themes.push('하나님의 능력');
-  if (text.match(/제자|따르|섬기|봉사/)) themes.push('제자의 삶');
-  if (themes.length === 0) themes.push('하나님의 말씀');
+  // Detect themes
+  const t = [];
+  if (text.match(/사랑|긍휼|은혜|자비/)) t.push('love');
+  if (text.match(/믿음|신뢰|의지/)) t.push('faith');
+  if (text.match(/기도|간구|부르짖/)) t.push('prayer');
+  if (text.match(/순종|명령|계명|율법/)) t.push('obey');
+  if (text.match(/구원|구하|건지|살리/)) t.push('salvation');
+  if (text.match(/두려|무서|걱정|염려/)) t.push('fear');
+  if (text.match(/감사|찬양|영광|높이/)) t.push('praise');
+  if (text.match(/죄|악|회개|용서/)) t.push('repent');
+  if (text.match(/소망|희망|기다|인내/)) t.push('hope');
+  if (text.match(/평안|평화|쉼|안식/)) t.push('peace');
+  if (text.match(/능력|권능|힘|강하/)) t.push('power');
+  if (text.match(/제자|따르|섬기|봉사/)) t.push('serve');
+  if (text.match(/왕|나라|통치|다스리/)) t.push('kingdom');
+  if (text.match(/약속|언약|맹세/)) t.push('promise');
+  if (text.match(/치유|고치|낫|병/)) t.push('healing');
+  if (text.match(/빛|어둠|진리|길/)) t.push('light');
 
-  const themeStr = themes.slice(0, 3).join(', ');
+  // Build narrative meditation paragraph
+  const name = ch.ko + ' ' + ch.ch + '장';
+  let p = '';
 
-  // Clean verse text for display
-  const cleanVerse = (v) => v.replace(/^\d+\.\s*/, '').trim();
+  p += `오늘 우리가 함께 묵상할 말씀은 ${name}입니다. 이 말씀은 총 ${totalVerses}절로 이루어져 있으며, `;
 
-  // Generate meditation
-  const parts = [];
+  // Opening context
+  p += `"${first.substring(0,60)}"라는 말씀으로 시작됩니다. `;
 
-  parts.push(`📌 ${ch.ko} ${ch.ch}장 묵상 가이드`);
-  parts.push('');
-  parts.push(`이 말씀은 총 ${totalVerses}절로, ${themeStr}에 대해 이야기합니다.`);
-  parts.push('');
-
-  // Opening verse highlight
-  parts.push(`▶ 말씀의 시작`);
-  parts.push(`"${cleanVerse(firstVerse).substring(0, 80)}..."`);
-  parts.push('');
-
-  // Key verse
-  parts.push(`▶ 핵심 구절`);
-  parts.push(`"${cleanVerse(midVerse).substring(0, 100)}"`);
-  parts.push('');
-
-  // Meditation questions
-  parts.push('▶ 묵상 질문');
-  parts.push('• 이 말씀에서 하나님은 나에게 무엇을 말씀하시는가?');
-  parts.push('• 이 말씀 속 인물들의 믿음/행동에서 무엇을 배울 수 있는가?');
-  parts.push('• 오늘 나의 삶에 이 말씀을 어떻게 적용할 수 있는가?');
-  parts.push('');
-
-  // Application
-  parts.push('▶ 적용');
-  if (themes.includes('하나님의 사랑과 은혜')) {
-    parts.push('하나님의 크신 사랑을 기억하며, 오늘 하루도 그 사랑 안에서 살아가기로 결심하세요.');
-  } else if (themes.includes('믿음과 신뢰')) {
-    parts.push('어떤 상황에서도 하나님을 신뢰하며, 말씀 위에 굳건히 서기로 결심하세요.');
-  } else if (themes.includes('순종과 말씀')) {
-    parts.push('말씀에 순종하는 것이 축복의 길임을 기억하고, 오늘 하나의 말씀을 실천해 보세요.');
-  } else if (themes.includes('회개와 용서')) {
-    parts.push('하나님 앞에 겸손히 나아가 마음을 정결케 하시길 기도하세요.');
-  } else if (themes.includes('감사와 찬양')) {
-    parts.push('오늘 감사할 세 가지를 떠올리며 하나님께 찬양을 올려드리세요.');
-  } else {
-    parts.push('이 말씀을 마음에 새기고, 하루 동안 한 구절을 반복하며 묵상해 보세요.');
+  // Theme-based narrative
+  if (t.includes('kingdom') || t.includes('power')) {
+    p += `이 말씀은 하나님의 나라와 그분의 주권적인 통치에 대해 이야기하고 있습니다. 세상의 권세가 아무리 강해 보여도, 하나님의 계획은 결코 막을 수 없다는 것을 우리에게 보여줍니다. `;
+    p += `역사 속에서 하나님은 언제나 당신의 뜻을 이루어 가셨고, 그 과정에서 믿음으로 순종하는 자들을 사용하셨습니다. `;
+  }
+  if (t.includes('fear')) {
+    p += `두려움이란 감정은 누구에게나 찾아올 수 있습니다. 하지만 하나님은 우리에게 두려워하지 말라고 말씀하십니다. 두려움 앞에서도 하나님을 바라볼 때, 우리는 담대함을 얻게 됩니다. `;
+    p += `이 말씀 속 인물들도 두려운 상황에 놓였지만, 하나님의 인도하심을 따라 한 걸음씩 나아갔습니다. `;
+  }
+  if (t.includes('faith')) {
+    p += `믿음이란 보이지 않는 것을 확신하는 것입니다. 이 말씀은 우리에게 어떤 상황에서도 하나님을 신뢰하는 것이 얼마나 중요한지를 일깨워 줍니다. `;
+    p += `우리의 이해를 넘어서는 일이 일어날 때에도, 하나님은 모든 것을 합력하여 선을 이루십니다. `;
+  }
+  if (t.includes('love')) {
+    p += `하나님의 사랑은 측량할 수 없이 크고 깊습니다. 이 말씀을 통해 우리는 하나님이 얼마나 우리를 사랑하시는지, 그 사랑이 어떤 모습으로 나타나는지를 발견하게 됩니다. `;
+    p += `그분의 사랑은 조건 없이 주어지며, 우리가 연약할 때에도 변함없이 우리를 품어 주십니다. `;
+  }
+  if (t.includes('obey')) {
+    p += `하나님의 말씀에 순종하는 것은 쉽지 않을 때가 있습니다. 그러나 순종은 축복의 통로이며, 하나님과의 관계를 더 깊게 만들어 줍니다. `;
+    p += `이 말씀은 순종의 길을 걸었던 사람들의 이야기를 통해, 우리에게도 그 길을 따르라고 권면합니다. `;
+  }
+  if (t.includes('repent')) {
+    p += `하나님 앞에 우리의 부족함을 인정하고 돌이키는 것은 은혜를 경험하는 첫걸음입니다. 회개는 부끄러운 것이 아니라, 하나님의 품으로 돌아가는 아름다운 여정입니다. `;
+    p += `이 말씀은 죄에서 돌이켜 하나님께 나아갈 때 주어지는 용서와 회복의 은혜를 보여줍니다. `;
+  }
+  if (t.includes('praise')) {
+    p += `감사와 찬양은 우리의 영혼을 새롭게 합니다. 환경이 어려울 때에도 하나님을 찬양할 수 있다면, 그것이야말로 진정한 믿음의 표현입니다. `;
+    p += `이 말씀은 하나님의 영광과 위대하심을 선포하며, 우리도 함께 찬양하도록 초대합니다. `;
+  }
+  if (t.includes('hope')) {
+    p += `소망은 현재의 고난 속에서도 미래를 바라볼 수 있게 해주는 하나님의 선물입니다. 인내하며 기다리는 것은 힘들지만, 하나님의 때는 반드시 옵니다. `;
+    p += `이 말씀은 포기하지 않고 끝까지 소망을 붙잡는 자에게 주어지는 약속을 담고 있습니다. `;
+  }
+  if (t.includes('peace')) {
+    p += `하나님이 주시는 평안은 세상이 줄 수 없는 것입니다. 모든 상황을 초월하는 그 평안이 오늘 당신의 마음을 채우시기를 기도합니다. `;
+  }
+  if (t.includes('salvation')) {
+    p += `구원은 하나님의 가장 위대한 선물입니다. 우리가 스스로 이룰 수 없는 것을 하나님이 은혜로 이루어 주셨습니다. `;
+  }
+  if (t.includes('promise')) {
+    p += `하나님의 약속은 하나도 땅에 떨어지지 않습니다. 오래 기다려야 할 때도 있지만, 그분은 반드시 약속을 지키시는 신실한 하나님이십니다. `;
+  }
+  if (t.includes('healing')) {
+    p += `하나님은 우리의 아픔을 아시고, 상한 마음을 치유하시는 분입니다. 이 말씀을 통해 치유의 손길을 경험하시기를 바랍니다. `;
+  }
+  if (t.includes('serve')) {
+    p += `섬김은 예수님이 보여주신 가장 아름다운 삶의 모습입니다. 낮은 자리에서 다른 사람을 섬기는 것이 하나님 나라의 원리입니다. `;
+  }
+  if (t.includes('light')) {
+    p += `하나님은 빛이시며, 그분 안에는 어둠이 조금도 없습니다. 이 말씀은 우리도 세상의 빛으로 살아가도록 부르고 있습니다. `;
   }
 
-  parts.push('');
-  parts.push('🙏 이 말씀을 통해 하나님과 더 깊이 만나는 시간이 되기를 기도합니다.');
+  // Mid verse highlight
+  p += `특별히 "${mid.substring(0,70)}"라는 말씀이 마음에 깊이 와닿습니다. `;
 
-  return parts.join('\n');
+  // Reflection
+  p += `이 구절을 천천히 반복해서 읽어 보세요. 하나님이 이 말씀을 통해 오늘 나에게 특별히 하시고 싶은 이야기가 있을 것입니다. `;
+  p += `어쩌면 위로의 말씀일 수도 있고, 도전의 말씀일 수도 있으며, 방향을 제시해 주시는 말씀일 수도 있습니다. `;
+  p += `마음을 열고 성령님의 음성에 귀를 기울여 보세요. `;
+
+  // Application
+  p += `오늘 이 말씀을 통해 한 가지만 실천해 보는 것은 어떨까요? `;
+  p += `말씀을 읽는 것에서 그치지 않고, 삶 속에서 작은 변화를 만들어 갈 때 진정한 묵상이 완성됩니다. `;
+  p += `하나님이 오늘 이 ${name}의 말씀을 통해 당신의 마음에 깊은 감동과 새로운 결단을 주시기를 기도합니다. `;
+
+  // Closing
+  p += `이 말씀을 하루 종일 마음에 품고, 기회가 될 때마다 떠올려 보세요. `;
+  p += `말씀이 우리 안에 거하면 거할수록, 우리의 삶은 더욱 하나님을 닮아가게 됩니다. `;
+  p += `오늘도 말씀과 함께하는 은혜로운 하루가 되시기를 축복합니다. 🙏`;
+
+  return p;
 }
 function markDone(){const h=getHistory();const t=today();if(!h.includes(t)){h.push(t);lsSet('history',JSON.stringify(h))}}
 
