@@ -83,7 +83,8 @@ h1{font-size:22px;text-align:center;font-weight:700}
   </div>
   <div class="streak" id="home-streak"></div>
   <div id="home-start">
-    <button class="btn-primary" onclick="startPrayer()">기도 시작하기 🙏</button>
+    <input type="text" id="user-name" placeholder="이름 입력 (선택사항)" style="width:100%;padding:14px;background:#fff;border:1px solid #e4e4e7;border-radius:12px;font-size:15px;text-align:center;outline:none;color:#1a1a1a;margin-bottom:12px" autocomplete="off">
+    <button class="btn-primary" onclick="startPrayer()">기도 🙏</button>
   </div>
   <div id="home-done" class="done-check" style="display:none">
     <div class="big">✅</div>
@@ -106,7 +107,7 @@ h1{font-size:22px;text-align:center;font-weight:700}
 
   <div class="nav-buttons">
     <button class="btn-secondary" id="btn-prev" onclick="prevStep()" style="display:none">← 이전</button>
-    <button class="btn-primary" id="btn-next" onclick="nextStep()">다음 단계 →</button>
+    <button class="btn-primary" id="btn-next" onclick="nextStep()">기도 🙏</button>
   </div>
 </div>
 
@@ -248,6 +249,16 @@ function goHome(){
   const done=h.includes(today());
   document.getElementById('home-start').style.display=done?'none':'block';
   document.getElementById('home-done').style.display=done?'block':'none';
+  // Restore saved name
+  const savedName=lsGet('username');
+  if(savedName) document.getElementById('user-name').value=savedName;
+}
+
+function getUserName(){
+  const el=document.getElementById('user-name');
+  const name=(el?el.value:'').trim();
+  if(name) lsSet('username',name);
+  return name;
 }
 
 function startPrayer(){
@@ -296,7 +307,7 @@ function renderStep(){
   btnPrev.style.display=currentStep>0?'block':'none';
 
   if(currentStep<STEPS.length){
-    btnNext.textContent='다음 단계 →';
+    btnNext.textContent='기도 🙏';
     btnNext.className='btn-primary';
     btnNext.onclick=nextStep;
   }else{
@@ -342,7 +353,8 @@ function completePrayer(){
   const m=MSGS[new Date().getDate()%MSGS.length];
   const h=getHistory();
   document.getElementById('comp-emoji').textContent=m.e;
-  document.getElementById('comp-title').textContent=m.t;
+  const uname=getUserName();
+  document.getElementById('comp-title').textContent=uname ? uname+'님, '+m.t : m.t;
   document.getElementById('comp-body').textContent=m.b;
   document.getElementById('comp-days').textContent=h.length;
   document.getElementById('comp-pct').textContent=((chapter.gi+1)/TOTAL*100).toFixed(1)+'%';
