@@ -203,18 +203,25 @@ function startPrayer(){
 }
 
 async function fetchBible(){
-  // Try multiple APIs for Korean Bible
-  const apis=[
-    // API 1: bible-api.com (Korean)
-    async()=>{const r=await fetch('https://bible-api.com/'+chapter.en+'+'+chapter.ch+'?translation=kr');if(r.ok){const d=await r.json();return d.text||'';}return null;},
-    // API 2: getbible.net (Korean)
-    async()=>{const r=await fetch('https://getbible.net/json?passage='+chapter.en+'+'+chapter.ch+'&version=korean');if(r.ok){const t=await r.text();const d=JSON.parse(t.replace(/^;$/,''));const ch=d[Object.keys(d)[0]].chapter;return Object.values(ch).map(v=>v.verse_nr+'. '+v.verse).join('\n');}return null;},
-    // API 3: bible.helloao.org (Korean)
-    async()=>{const bookMap={matt:'MAT',mark:'MRK',luke:'LUK',john:'JHN',acts:'ACT',rom:'ROM','1cor':'1CO','2cor':'2CO',gal:'GAL',eph:'EPH',phil:'PHP',col:'COL','1thess':'1TH','2thess':'2TH','1tim':'1TI','2tim':'2TI',titus:'TIT',phlm:'PHM',heb:'HEB',jas:'JAS','1pet':'1PE','2pet':'2PE','1john':'1JN','2john':'2JN','3john':'3JN',jude:'JUD',rev:'REV',gen:'GEN',exod:'EXO',lev:'LEV',num:'NUM',deut:'DEU',josh:'JOS',judg:'JDG',ruth:'RUT','1sam':'1SA','2sam':'2SA','1kgs':'1KI','2kgs':'2KI','1chr':'1CH','2chr':'2CH',ezra:'EZR',neh:'NEH',esth:'EST',job:'JOB',ps:'PSA',prov:'PRO',eccl:'ECC',song:'SNG',isa:'ISA',jer:'JER',lam:'LAM',ezek:'EZK',dan:'DAN',hos:'HOS',joel:'JOL',amos:'AMO',obad:'OBA',jonah:'JON',mic:'MIC',nah:'NAM',hab:'HAB',zeph:'ZEP',hag:'HAG',zech:'ZEC',mal:'MAL'};const code=bookMap[chapter.en]||chapter.en.toUpperCase();const r=await fetch('https://bible.helloao.org/api/KRV/'+code+'/'+chapter.ch+'.json');if(r.ok){const d=await r.json();if(d.chapter&&d.chapter.content){return d.chapter.content.filter(c=>c.type==='verse').map(v=>v.number+'. '+v.content).join('\n');}return d.text||'';}return null;},
-  ];
+  // bolls.life API: book numbers (1=Gen...39=Mal, 40=Matt...66=Rev)
+  const bookNum={gen:1,exod:2,lev:3,num:4,deut:5,josh:6,judg:7,ruth:8,'1sam':9,'2sam':10,'1kgs':11,'2kgs':12,'1chr':13,'2chr':14,ezra:15,neh:16,esth:17,job:18,ps:19,prov:20,eccl:21,song:22,isa:23,jer:24,lam:25,ezek:26,dan:27,hos:28,joel:29,amos:30,obad:31,jonah:32,mic:33,nah:34,hab:35,zeph:36,hag:37,zech:38,mal:39,matt:40,mark:41,luke:42,john:43,acts:44,rom:45,'1cor':46,'2cor':47,gal:48,eph:49,phil:50,col:51,'1thess':52,'2thess':53,'1tim':54,'2tim':55,titus:56,phlm:57,heb:58,jas:59,'1pet':60,'2pet':61,'1john':62,'2john':63,'3john':64,jude:65,rev:66};
+  const bn=bookNum[chapter.en]||40;
   bibleText='';
-  for(const api of apis){
-    try{const result=await api();if(result){bibleText=result;break;}}catch{}
+  try{
+    const r=await fetch('https://bolls.life/get-chapter/KRV/'+bn+'/'+chapter.ch+'/');
+    if(r.ok){
+      const verses=await r.json();
+      if(Array.isArray(verses)&&verses.length>0){
+        bibleText=verses.map(v=>v.verse+'. '+v.text).join('\n');
+      }
+    }
+  }catch{}
+  if(!bibleText){
+    // Fallback: bible-api.com English
+    try{
+      const r2=await fetch('https://bible-api.com/'+chapter.en+'+'+chapter.ch+'?translation=kjv');
+      if(r2.ok){const d=await r2.json();bibleText=d.text||'';}
+    }catch{}
   }
   if(!bibleText)bibleText=chapter.ko+' '+chapter.ch+'장의 말씀을 묵상하세요.\n\n성경책을 펴고 읽어주세요.';
   if(currentStep===0)renderStep();
