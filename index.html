@@ -166,6 +166,82 @@ function getChapter(){
   return ALL[((d%TOTAL)+TOTAL)%TOTAL];
 }
 function getHistory(){try{return JSON.parse(lsGet('history')||'[]')}catch{return[]}}
+
+function generateMeditation(ch, text) {
+  // Parse verses
+  const lines = text.split('\n').filter(l => l.trim());
+  const totalVerses = lines.length;
+  const firstVerse = lines[0] || '';
+  const midVerse = lines[Math.floor(lines.length/2)] || '';
+  const lastVerse = lines[lines.length-1] || '';
+
+  // Extract key themes based on keywords
+  const themes = [];
+  if (text.match(/사랑|긍휼|은혜|자비/)) themes.push('하나님의 사랑과 은혜');
+  if (text.match(/믿음|신뢰|의지/)) themes.push('믿음과 신뢰');
+  if (text.match(/기도|간구|부르짖/)) themes.push('기도의 능력');
+  if (text.match(/순종|명령|계명|율법/)) themes.push('순종과 말씀');
+  if (text.match(/구원|구하|건지|살리/)) themes.push('구원의 약속');
+  if (text.match(/두려|무서|걱정|염려/)) themes.push('두려움을 이기는 믿음');
+  if (text.match(/감사|찬양|영광|높이/)) themes.push('감사와 찬양');
+  if (text.match(/죄|악|회개|용서/)) themes.push('회개와 용서');
+  if (text.match(/소망|희망|기다|인내/)) themes.push('소망과 인내');
+  if (text.match(/평안|평화|쉼|안식/)) themes.push('하나님의 평안');
+  if (text.match(/능력|권능|힘|강하/)) themes.push('하나님의 능력');
+  if (text.match(/제자|따르|섬기|봉사/)) themes.push('제자의 삶');
+  if (themes.length === 0) themes.push('하나님의 말씀');
+
+  const themeStr = themes.slice(0, 3).join(', ');
+
+  // Clean verse text for display
+  const cleanVerse = (v) => v.replace(/^\d+\.\s*/, '').trim();
+
+  // Generate meditation
+  const parts = [];
+
+  parts.push(`📌 ${ch.ko} ${ch.ch}장 묵상 가이드`);
+  parts.push('');
+  parts.push(`이 말씀은 총 ${totalVerses}절로, ${themeStr}에 대해 이야기합니다.`);
+  parts.push('');
+
+  // Opening verse highlight
+  parts.push(`▶ 말씀의 시작`);
+  parts.push(`"${cleanVerse(firstVerse).substring(0, 80)}..."`);
+  parts.push('');
+
+  // Key verse
+  parts.push(`▶ 핵심 구절`);
+  parts.push(`"${cleanVerse(midVerse).substring(0, 100)}"`);
+  parts.push('');
+
+  // Meditation questions
+  parts.push('▶ 묵상 질문');
+  parts.push('• 이 말씀에서 하나님은 나에게 무엇을 말씀하시는가?');
+  parts.push('• 이 말씀 속 인물들의 믿음/행동에서 무엇을 배울 수 있는가?');
+  parts.push('• 오늘 나의 삶에 이 말씀을 어떻게 적용할 수 있는가?');
+  parts.push('');
+
+  // Application
+  parts.push('▶ 적용');
+  if (themes.includes('하나님의 사랑과 은혜')) {
+    parts.push('하나님의 크신 사랑을 기억하며, 오늘 하루도 그 사랑 안에서 살아가기로 결심하세요.');
+  } else if (themes.includes('믿음과 신뢰')) {
+    parts.push('어떤 상황에서도 하나님을 신뢰하며, 말씀 위에 굳건히 서기로 결심하세요.');
+  } else if (themes.includes('순종과 말씀')) {
+    parts.push('말씀에 순종하는 것이 축복의 길임을 기억하고, 오늘 하나의 말씀을 실천해 보세요.');
+  } else if (themes.includes('회개와 용서')) {
+    parts.push('하나님 앞에 겸손히 나아가 마음을 정결케 하시길 기도하세요.');
+  } else if (themes.includes('감사와 찬양')) {
+    parts.push('오늘 감사할 세 가지를 떠올리며 하나님께 찬양을 올려드리세요.');
+  } else {
+    parts.push('이 말씀을 마음에 새기고, 하루 동안 한 구절을 반복하며 묵상해 보세요.');
+  }
+
+  parts.push('');
+  parts.push('🙏 이 말씀을 통해 하나님과 더 깊이 만나는 시간이 되기를 기도합니다.');
+
+  return parts.join('\n');
+}
 function markDone(){const h=getHistory();const t=today();if(!h.includes(t)){h.push(t);lsSet('history',JSON.stringify(h))}}
 
 // === State ===
@@ -251,16 +327,14 @@ function renderStep(){
   if(currentStep===0){
     label.textContent='묵상';
     const txt=bibleText||chapter.ko+' '+chapter.ch+'장의 말씀을 묵상하세요.\n\n(성경책을 펴고 읽어주세요.)';
-    const summary=bibleText
-      ? chapter.ko+' '+chapter.ch+'장: '+bibleText.substring(0,150).replace(/\n/g,' ')+'... 하나님의 뜻을 깊이 묵상해 보세요.'
-      : chapter.ko+' '+chapter.ch+'장을 천천히 읽고 하나님의 음성에 귀 기울여 보세요.';
+    const summary=bibleText ? generateMeditation(chapter, bibleText) : chapter.ko+' '+chapter.ch+'장을 천천히 읽고 하나님의 음성에 귀 기울여 보세요.';
     const memo=lsGet('memo-'+t+'-0')||'';
     content.innerHTML=`
       <div class="step-icon">📖</div>
       <div class="step-title">${chapter.ko} ${chapter.ch}장</div>
       <p class="subtitle" style="margin:4px 0 0">오늘의 말씀을 묵상하세요</p>
       <div class="bible-box">${txt.replace(/\n/g,'<br>')}</div>
-      <div class="summary-box"><div class="label">🤖 요약</div><p>${summary}</p></div>
+      <div class="summary-box"><div class="label">✝️ 묵상 가이드</div><div style="font-size:13px;color:#374151;line-height:1.8;white-space:pre-wrap">${summary}</div></div>
       <textarea class="memo" placeholder="말씀을 통해 느낀 점을 적어보세요..." oninput="saveMemo(0,this.value)">${memo}</textarea>`;
   }else{
     const s=STEPS[currentStep-1];
