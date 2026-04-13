@@ -122,9 +122,14 @@ h1{font-size:22px;text-align:center;font-weight:700}
       <div><div class="stat-num green" id="comp-pct"></div><div class="stat-label">성경 진행률</div></div>
     </div>
   </div>
+  <!-- 오늘의 기도 기록 -->
+  <div id="comp-memos" class="card" style="text-align:left;margin-top:12px"></div>
+  <button class="btn-primary" onclick="downloadMemoImage()" style="margin-top:12px">기도 기록 저장 📷</button>
   <button class="btn-secondary" onclick="goHome()">홈으로 돌아가기</button>
   <p class="footer">내일도 함께 기도해요 🙏</p>
 </div>
+<!-- Hidden canvas for image generation -->
+<canvas id="memo-canvas" style="display:none"></canvas>
 
 </div>
 <script>
@@ -246,9 +251,9 @@ function goHome(){
   document.getElementById('home-total-progress').textContent=(chapter.gi+1)+' / '+TOTAL;
   document.getElementById('home-progress-bar').style.width=((chapter.gi+1)/TOTAL*100)+'%';
   if(h.length>0)document.getElementById('home-streak').textContent='🔥 '+h.length+'일 기도 완료';
-  const done=h.includes(today());
-  document.getElementById('home-start').style.display=done?'none':'block';
-  document.getElementById('home-done').style.display=done?'block':'none';
+  // Always show start button
+  document.getElementById('home-start').style.display='block';
+  document.getElementById('home-done').style.display='none';
   // Restore saved name
   const savedName=lsGet('username');
   if(savedName) document.getElementById('user-name').value=savedName;
@@ -364,6 +369,103 @@ function completePrayer(){
   document.getElementById('comp-body').textContent=m.b;
   document.getElementById('comp-days').textContent=h.length;
   document.getElementById('comp-pct').textContent=((chapter.gi+1)/TOTAL*100).toFixed(1)+'%';
+
+  // Show collected memos
+  const t=today();
+  const allSteps=[{id:0,title:'묵상',icon:'📖'},...STEPS.map((s,i)=>({id:s.id,title:s.title,icon:s.icon}))];
+  let memosHtml='<div style="font-size:14px;font-weight:600;margin-bottom:10px">📝 오늘의 기도 기록</div>';
+  let hasMemo=false;
+  allSteps.forEach((s,i)=>{
+    const memo=lsGet('memo-'+t+'-'+s.id)||'';
+    if(memo.trim()){
+      hasMemo=true;
+      memosHtml+=`<div style="margin-bottom:10px"><div style="font-size:12px;color:#6d28d9;font-weight:600;margin-bottom:3px">${s.icon} ${i+1}. ${s.title}</div><div style="font-size:13px;color:#374151;line-height:1.6">${memo.replace(/\n/g,'<br>')}</div></div>`;
+    }
+  });
+  if(!hasMemo) memosHtml+='<div style="font-size:13px;color:#9ca3af">기록된 메모가 없습니다.</div>';
+  document.getElementById('comp-memos').innerHTML=memosHtml;
+}
+
+function downloadMemoImage(){
+  const t=today();
+  const uname=getUserName();
+  const allSteps=[{id:0,title:'묵상',icon:'📖'},...STEPS.map(s=>({id:s.id,title:s.title,icon:s.icon}))];
+
+  const canvas=document.getElementById('memo-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=750, pad=40, lineH=24, titleH=36;
+
+  // Collect memo texts
+  const entries=[];
+  allSteps.forEach((s,i)=>{
+    const memo=(lsGet('memo-'+t+'-'+s.id)||'').trim();
+    if(memo) entries.push({num:i+1, title:s.title, icon:s.icon, text:memo});
+  });
+
+  // Calculate height
+  let totalLines=0;
+  entries.forEach(e=>{
+    totalLines+=2; // title + gap
+    const words=e.text;
+    totalLines+=Math.ceil(words.length/32)+1; // rough line count
+  });
+  const H=pad*2+80+totalLines*lineH+entries.length*20+60;
+
+  canvas.width=W; canvas.height=Math.max(H,400);
+  // Background
+  ctx.fillStyle='#faf5ff'; ctx.fillRect(0,0,W,canvas.height);
+
+  // Header
+  let y=pad+10;
+  ctx.fillStyle='#6d28d9'; ctx.font='bold 22px -apple-system,system-ui,sans-serif';
+  ctx.fillText('🙏 QT 7분법 기도',pad,y); y+=30;
+  ctx.fillStyle='#6b7280'; ctx.font='14px -apple-system,system-ui,sans-serif';
+  const dateStr=t.replace(/-/g,'.');
+  ctx.fillText((uname?uname+'님의 ':'')+'기도 기록 — '+dateStr+' | '+chapter.ko+' '+chapter.ch+'장',pad,y);
+  y+=10;
+  // Line
+  ctx.strokeStyle='#e4e4e7'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad,y+8); ctx.lineTo(W-pad,y+8); ctx.stroke();
+  y+=24;
+
+  // Entries
+  entries.forEach(e=>{
+    ctx.fillStyle='#6d28d9'; ctx.font='bold 15px -apple-system,system-ui,sans-serif';
+    ctx.fillText(e.icon+' '+e.num+'. '+e.title,pad,y); y+=22;
+
+    ctx.fillStyle='#374151'; ctx.font='14px -apple-system,system-ui,sans-serif';
+    // Word wrap
+    const maxW=W-pad*2;
+    const chars=e.text.split('');
+    let line='';
+    for(const ch of chars){
+      if(ch==='\n'){
+        ctx.fillText(line,pad,y); y+=lineH; line=''; continue;
+      }
+      const test=line+ch;
+      if(ctx.measureText(test).width>maxW){
+        ctx.fillText(line,pad,y); y+=lineH; line=ch;
+      }else{ line=test; }
+    }
+    if(line){ ctx.fillText(line,pad,y); y+=lineH; }
+    y+=12;
+  });
+
+  if(entries.length===0){
+    ctx.fillStyle='#9ca3af'; ctx.font='14px -apple-system,system-ui,sans-serif';
+    ctx.fillText('기록된 메모가 없습니다.',pad,y);
+  }
+
+  // Footer
+  y=canvas.height-pad;
+  ctx.fillStyle='#9ca3af'; ctx.font='11px -apple-system,system-ui,sans-serif';
+  ctx.fillText('QT 7분법 기도 앱 — gooddoo84.github.io/qt-prayer',pad,y);
+
+  // Download
+  const link=document.createElement('a');
+  link.download='기도기록_'+t+'.png';
+  link.href=canvas.toDataURL('image/png');
+  link.click();
 }
 
 // Init
