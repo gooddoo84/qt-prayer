@@ -168,110 +168,54 @@ function getChapter(){
 function getHistory(){try{return JSON.parse(lsGet('history')||'[]')}catch{return[]}}
 
 function generateMeditation(ch, text) {
-  const lines = text.split('\n').filter(l => l.trim());
-  const totalVerses = lines.length;
-  const clean = (v) => v.replace(/^\d+\.\s*/, '').trim();
-  const first = clean(lines[0]||'');
+  const lines = text.split('\n').filter(l=>l.trim());
+  const clean = v=>v.replace(/^\d+\.\s*/,'').trim();
   const mid = clean(lines[Math.floor(lines.length/2)]||'');
-  const last = clean(lines[lines.length-1]||'');
+  const name = ch.ko+' '+ch.ch+'장';
 
-  // Detect themes
-  const t = [];
-  if (text.match(/사랑|긍휼|은혜|자비/)) t.push('love');
-  if (text.match(/믿음|신뢰|의지/)) t.push('faith');
-  if (text.match(/기도|간구|부르짖/)) t.push('prayer');
-  if (text.match(/순종|명령|계명|율법/)) t.push('obey');
-  if (text.match(/구원|구하|건지|살리/)) t.push('salvation');
-  if (text.match(/두려|무서|걱정|염려/)) t.push('fear');
-  if (text.match(/감사|찬양|영광|높이/)) t.push('praise');
-  if (text.match(/죄|악|회개|용서/)) t.push('repent');
-  if (text.match(/소망|희망|기다|인내/)) t.push('hope');
-  if (text.match(/평안|평화|쉼|안식/)) t.push('peace');
-  if (text.match(/능력|권능|힘|강하/)) t.push('power');
-  if (text.match(/제자|따르|섬기|봉사/)) t.push('serve');
-  if (text.match(/왕|나라|통치|다스리/)) t.push('kingdom');
-  if (text.match(/약속|언약|맹세/)) t.push('promise');
-  if (text.match(/치유|고치|낫|병/)) t.push('healing');
-  if (text.match(/빛|어둠|진리|길/)) t.push('light');
+  // Detect top theme
+  const themes = [];
+  if(text.match(/왕|나라|통치|다스리/)) themes.push('하나님의 나라와 주권');
+  if(text.match(/두려|무서|걱정|염려/)) themes.push('두려움을 이기는 믿음');
+  if(text.match(/사랑|긍휼|은혜|자비/)) themes.push('하나님의 사랑');
+  if(text.match(/믿음|신뢰|의지/)) themes.push('믿음의 여정');
+  if(text.match(/순종|명령|계명/)) themes.push('순종의 축복');
+  if(text.match(/죄|악|회개|용서/)) themes.push('회개와 용서');
+  if(text.match(/감사|찬양|영광/)) themes.push('감사와 찬양');
+  if(text.match(/소망|희망|기다|인내/)) themes.push('소망과 인내');
+  if(text.match(/구원|구하|건지/)) themes.push('구원의 은혜');
+  if(text.match(/평안|평화|쉼/)) themes.push('하나님의 평안');
+  const theme = themes[0] || '하나님의 말씀';
 
-  // Build narrative meditation paragraph
-  const name = ch.ko + ' ' + ch.ch + '장';
-  let p = '';
+  let p = `오늘 묵상할 ${name}은 ${theme}에 대해 이야기합니다. `;
+  p += `총 ${lines.length}절의 말씀 속에서 하나님은 우리에게 중요한 메시지를 전하고 계십니다. `;
 
-  p += `오늘 우리가 함께 묵상할 말씀은 ${name}입니다. 이 말씀은 총 ${totalVerses}절로 이루어져 있으며, `;
+  // Theme-specific (pick first 2 matching, 2 sentences each)
+  const themeTexts = {
+    '하나님의 나라와 주권': '세상의 권세가 아무리 강해 보여도 하나님의 계획은 결코 막을 수 없습니다. 역사 속에서 하나님은 언제나 당신의 뜻을 이루어 가셨습니다.',
+    '두려움을 이기는 믿음': '두려움은 누구에게나 찾아오지만, 하나님은 두려워하지 말라고 말씀하십니다. 두려움 앞에서도 하나님을 바라볼 때 우리는 담대함을 얻습니다.',
+    '하나님의 사랑': '하나님의 사랑은 측량할 수 없이 크고 깊습니다. 우리가 연약할 때에도 변함없이 우리를 품어 주시는 분이십니다.',
+    '믿음의 여정': '믿음이란 보이지 않는 것을 확신하는 것입니다. 우리의 이해를 넘어서는 일이 있어도 하나님은 모든 것을 합력하여 선을 이루십니다.',
+    '순종의 축복': '순종은 때로 어렵지만, 그것은 축복의 통로이며 하나님과의 관계를 더 깊게 만들어 줍니다. 말씀에 순종했던 믿음의 사람들을 통해 우리도 배우게 됩니다.',
+    '회개와 용서': '하나님 앞에 부족함을 인정하고 돌이키는 것은 은혜를 경험하는 첫걸음입니다. 회개는 하나님의 품으로 돌아가는 아름다운 여정입니다.',
+    '감사와 찬양': '환경이 어려울 때에도 하나님을 찬양할 수 있다면 그것이 진정한 믿음의 표현입니다. 감사와 찬양은 우리의 영혼을 새롭게 합니다.',
+    '소망과 인내': '소망은 고난 속에서도 미래를 바라보게 해주는 하나님의 선물입니다. 하나님의 때는 반드시 오며, 끝까지 붙잡는 자에게 약속이 이루어집니다.',
+    '구원의 은혜': '구원은 하나님의 가장 위대한 선물입니다. 우리가 스스로 이룰 수 없는 것을 하나님이 은혜로 이루어 주셨습니다.',
+    '하나님의 평안': '하나님이 주시는 평안은 세상이 줄 수 없는 것입니다. 모든 상황을 초월하는 그 평안이 우리 마음을 지켜 주십니다.',
+    '하나님의 말씀': '하나님의 말씀은 우리 발에 등이요 우리 길에 빛입니다. 말씀을 통해 하나님의 뜻을 발견하고 그 길을 따라가게 됩니다.',
+  };
 
-  // Opening context
-  p += `"${first.substring(0,60)}"라는 말씀으로 시작됩니다. `;
+  for(const th of themes.slice(0,2)){
+    if(themeTexts[th]) p += themeTexts[th]+' ';
+  }
+  if(themes.length===0) p += themeTexts['하나님의 말씀']+' ';
 
-  // Theme-based narrative
-  if (t.includes('kingdom') || t.includes('power')) {
-    p += `이 말씀은 하나님의 나라와 그분의 주권적인 통치에 대해 이야기하고 있습니다. 세상의 권세가 아무리 강해 보여도, 하나님의 계획은 결코 막을 수 없다는 것을 우리에게 보여줍니다. `;
-    p += `역사 속에서 하나님은 언제나 당신의 뜻을 이루어 가셨고, 그 과정에서 믿음으로 순종하는 자들을 사용하셨습니다. `;
-  }
-  if (t.includes('fear')) {
-    p += `두려움이란 감정은 누구에게나 찾아올 수 있습니다. 하지만 하나님은 우리에게 두려워하지 말라고 말씀하십니다. 두려움 앞에서도 하나님을 바라볼 때, 우리는 담대함을 얻게 됩니다. `;
-    p += `이 말씀 속 인물들도 두려운 상황에 놓였지만, 하나님의 인도하심을 따라 한 걸음씩 나아갔습니다. `;
-  }
-  if (t.includes('faith')) {
-    p += `믿음이란 보이지 않는 것을 확신하는 것입니다. 이 말씀은 우리에게 어떤 상황에서도 하나님을 신뢰하는 것이 얼마나 중요한지를 일깨워 줍니다. `;
-    p += `우리의 이해를 넘어서는 일이 일어날 때에도, 하나님은 모든 것을 합력하여 선을 이루십니다. `;
-  }
-  if (t.includes('love')) {
-    p += `하나님의 사랑은 측량할 수 없이 크고 깊습니다. 이 말씀을 통해 우리는 하나님이 얼마나 우리를 사랑하시는지, 그 사랑이 어떤 모습으로 나타나는지를 발견하게 됩니다. `;
-    p += `그분의 사랑은 조건 없이 주어지며, 우리가 연약할 때에도 변함없이 우리를 품어 주십니다. `;
-  }
-  if (t.includes('obey')) {
-    p += `하나님의 말씀에 순종하는 것은 쉽지 않을 때가 있습니다. 그러나 순종은 축복의 통로이며, 하나님과의 관계를 더 깊게 만들어 줍니다. `;
-    p += `이 말씀은 순종의 길을 걸었던 사람들의 이야기를 통해, 우리에게도 그 길을 따르라고 권면합니다. `;
-  }
-  if (t.includes('repent')) {
-    p += `하나님 앞에 우리의 부족함을 인정하고 돌이키는 것은 은혜를 경험하는 첫걸음입니다. 회개는 부끄러운 것이 아니라, 하나님의 품으로 돌아가는 아름다운 여정입니다. `;
-    p += `이 말씀은 죄에서 돌이켜 하나님께 나아갈 때 주어지는 용서와 회복의 은혜를 보여줍니다. `;
-  }
-  if (t.includes('praise')) {
-    p += `감사와 찬양은 우리의 영혼을 새롭게 합니다. 환경이 어려울 때에도 하나님을 찬양할 수 있다면, 그것이야말로 진정한 믿음의 표현입니다. `;
-    p += `이 말씀은 하나님의 영광과 위대하심을 선포하며, 우리도 함께 찬양하도록 초대합니다. `;
-  }
-  if (t.includes('hope')) {
-    p += `소망은 현재의 고난 속에서도 미래를 바라볼 수 있게 해주는 하나님의 선물입니다. 인내하며 기다리는 것은 힘들지만, 하나님의 때는 반드시 옵니다. `;
-    p += `이 말씀은 포기하지 않고 끝까지 소망을 붙잡는 자에게 주어지는 약속을 담고 있습니다. `;
-  }
-  if (t.includes('peace')) {
-    p += `하나님이 주시는 평안은 세상이 줄 수 없는 것입니다. 모든 상황을 초월하는 그 평안이 오늘 당신의 마음을 채우시기를 기도합니다. `;
-  }
-  if (t.includes('salvation')) {
-    p += `구원은 하나님의 가장 위대한 선물입니다. 우리가 스스로 이룰 수 없는 것을 하나님이 은혜로 이루어 주셨습니다. `;
-  }
-  if (t.includes('promise')) {
-    p += `하나님의 약속은 하나도 땅에 떨어지지 않습니다. 오래 기다려야 할 때도 있지만, 그분은 반드시 약속을 지키시는 신실한 하나님이십니다. `;
-  }
-  if (t.includes('healing')) {
-    p += `하나님은 우리의 아픔을 아시고, 상한 마음을 치유하시는 분입니다. 이 말씀을 통해 치유의 손길을 경험하시기를 바랍니다. `;
-  }
-  if (t.includes('serve')) {
-    p += `섬김은 예수님이 보여주신 가장 아름다운 삶의 모습입니다. 낮은 자리에서 다른 사람을 섬기는 것이 하나님 나라의 원리입니다. `;
-  }
-  if (t.includes('light')) {
-    p += `하나님은 빛이시며, 그분 안에는 어둠이 조금도 없습니다. 이 말씀은 우리도 세상의 빛으로 살아가도록 부르고 있습니다. `;
-  }
-
-  // Mid verse highlight
-  p += `특별히 "${mid.substring(0,70)}"라는 말씀이 마음에 깊이 와닿습니다. `;
-
-  // Reflection
-  p += `이 구절을 천천히 반복해서 읽어 보세요. 하나님이 이 말씀을 통해 오늘 나에게 특별히 하시고 싶은 이야기가 있을 것입니다. `;
-  p += `어쩌면 위로의 말씀일 수도 있고, 도전의 말씀일 수도 있으며, 방향을 제시해 주시는 말씀일 수도 있습니다. `;
-  p += `마음을 열고 성령님의 음성에 귀를 기울여 보세요. `;
-
-  // Application
-  p += `오늘 이 말씀을 통해 한 가지만 실천해 보는 것은 어떨까요? `;
-  p += `말씀을 읽는 것에서 그치지 않고, 삶 속에서 작은 변화를 만들어 갈 때 진정한 묵상이 완성됩니다. `;
-  p += `하나님이 오늘 이 ${name}의 말씀을 통해 당신의 마음에 깊은 감동과 새로운 결단을 주시기를 기도합니다. `;
-
-  // Closing
-  p += `이 말씀을 하루 종일 마음에 품고, 기회가 될 때마다 떠올려 보세요. `;
-  p += `말씀이 우리 안에 거하면 거할수록, 우리의 삶은 더욱 하나님을 닮아가게 됩니다. `;
-  p += `오늘도 말씀과 함께하는 은혜로운 하루가 되시기를 축복합니다. 🙏`;
+  p += `특별히 "${mid.substring(0,60)}"라는 말씀이 마음에 와닿습니다. `;
+  p += `이 구절을 천천히 반복해서 읽으며, 하나님이 오늘 나에게 하시고 싶은 이야기에 귀 기울여 보세요. `;
+  p += `위로일 수도, 도전일 수도, 새로운 방향일 수도 있습니다. `;
+  p += `오늘 이 말씀에서 한 가지를 삶에 적용해 보세요. `;
+  p += `말씀을 읽는 것에서 그치지 않고 실천할 때 진정한 묵상이 완성됩니다. `;
+  p += `하루 종일 이 말씀을 마음에 품고, 하나님과 동행하는 은혜로운 하루가 되시길 축복합니다. 🙏`;
 
   return p;
 }
@@ -358,24 +302,24 @@ function renderStep(){
 
   const t=today();
   if(currentStep===0){
-    label.textContent='묵상';
+    label.textContent='1. 묵상';
     const txt=bibleText||chapter.ko+' '+chapter.ch+'장의 말씀을 묵상하세요.\n\n(성경책을 펴고 읽어주세요.)';
     const summary=bibleText ? generateMeditation(chapter, bibleText) : chapter.ko+' '+chapter.ch+'장을 천천히 읽고 하나님의 음성에 귀 기울여 보세요.';
     const memo=lsGet('memo-'+t+'-0')||'';
     content.innerHTML=`
       <div class="step-icon">📖</div>
-      <div class="step-title">${chapter.ko} ${chapter.ch}장</div>
-      <p class="subtitle" style="margin:4px 0 0">오늘의 말씀을 묵상하세요</p>
+      <div class="step-title">1. 묵상</div>
+      <p class="subtitle" style="margin:4px 0 0">${chapter.ko} ${chapter.ch}장</p>
       <div class="bible-box">${txt.replace(/\n/g,'<br>')}</div>
-      <div class="summary-box"><div class="label">✝️ 묵상 가이드</div><div style="font-size:13px;color:#374151;line-height:1.8;white-space:pre-wrap">${summary}</div></div>
+      <div class="summary-box"><div class="label">✝️ 묵상 가이드</div><div style="font-size:13px;color:#374151;line-height:1.8">${summary}</div></div>
       <textarea class="memo" placeholder="말씀을 통해 느낀 점을 적어보세요..." oninput="saveMemo(0,this.value)">${memo}</textarea>`;
   }else{
     const s=STEPS[currentStep-1];
-    label.textContent=currentStep+'/7';
+    label.textContent=(currentStep+1)+'. '+s.title;
     const memo=lsGet('memo-'+t+'-'+s.id)||'';
     content.innerHTML=`
       <div class="step-icon">${s.icon}</div>
-      <div class="step-title">${s.title}</div>
+      <div class="step-title">${currentStep+1}. ${s.title}</div>
       <div class="step-subtitle">${s.sub}</div>
       <div class="guide-box">${s.guide}</div>
       <textarea class="memo" placeholder="${s.ph}" oninput="saveMemo(${s.id},this.value)">${memo}</textarea>`;
