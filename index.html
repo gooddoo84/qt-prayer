@@ -261,12 +261,18 @@ function getUserName(){
   return name;
 }
 
-function startPrayer(){
+async function startPrayer(){
   currentStep=0;
   chapter=getChapter();
+  // Show loading on home page button
+  const btn=document.querySelector('#home-start .btn-primary');
+  if(btn){btn.textContent='말씀 불러오는 중...';btn.disabled=true;}
+  // Fetch bible first
+  await fetchBible();
+  // Now show prayer page
+  if(btn){btn.textContent='기도 🙏';btn.disabled=false;}
   showPage('prayer');
   document.getElementById('prayer-chapter-label').textContent=chapter.ko+' '+chapter.ch+'장';
-  fetchBible();
   renderStep();
 }
 
@@ -319,7 +325,7 @@ function renderStep(){
   const t=today();
   if(currentStep===0){
     label.textContent='1. 묵상';
-    const txt=bibleText||chapter.ko+' '+chapter.ch+'장의 말씀을 묵상하세요.\n\n(성경책을 펴고 읽어주세요.)';
+    const txt=bibleText||'말씀을 불러오지 못했습니다. 새로고침 해주세요.';
     const summary=bibleText ? generateMeditation(chapter, bibleText) : chapter.ko+' '+chapter.ch+'장을 천천히 읽고 하나님의 음성에 귀 기울여 보세요.';
     const memo=lsGet('memo-'+t+'-0')||'';
     content.innerHTML=`
